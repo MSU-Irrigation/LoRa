@@ -2,10 +2,13 @@
   Name: heltec_lora.ino
   Author: Tommy Rose
   Created on: 02/07/2025
+  
+  Updates:
+  3/6/2025 - changed interval to 15 minutes.
 
-  Purpose: Reads from the SHT31, leaf wetness, and rain gauge(?) sensors 3 times at startup, averages the readings, and sends the data via LoRa every 3 minutes.
+  Purpose: Reads from the SHT31 and leaf wetness 3 times at startup, averages the readings, and sends the data via LoRa every 15 minutes.
 
-  Version 1.3
+  Version 1.2
 */
 
 #include "LoRaWan_APP.h"
@@ -13,12 +16,12 @@
 #include <Adafruit_SHT31.h>
 #include <SdFat.h>
 
-/* Over the Air Activation (OTAA) Parameters */       // testing with heltec-oled-4
-uint8_t devEui[] = { 0x70, 0xB3, 0xD5, 0x7E, 0xD8, 0x00, 0x3F, 0x5C };
+/* Over the Air Activation (OTAA) Parameters. Get each node's parameters off TTS. */ 
+uint8_t devEui[] = { 0x70, 0xB3, 0xD5, 0x7E, 0xD8, 0x00, 0x3F, 0x57 };
 uint8_t appEui[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-uint8_t appKey[] = { 0x48, 0x21, 0x5C, 0xBA, 0x93, 0xD7, 0xC8, 0x9B, 0x69, 0x9F, 0x4B, 0x78, 0xBD, 0xC1, 0x67, 0x11 };
+uint8_t appKey[] = { 0x02, 0x2A, 0xE1, 0x13, 0xB7, 0x4C, 0x88, 0xB3, 0xCA, 0x31, 0x03, 0x28, 0x38, 0x3D, 0x8B, 0x0F };
 
-/* ABP para*. (not used since we're using OTAA but the compiler will complain if you edit it out)*/
+/* ABP para*. (not used since we're using OTAA but the compiler doesn't like if edited it out)*/
 uint8_t nwkSKey[] = { 0x15, 0xb1, 0xd0, 0xef, 0xa4, 0x63, 0xdf, 0xbe, 0x3d, 0x11, 0x18, 0x1e, 0x1e, 0xc7, 0xda, 0x85 };
 uint8_t appSKey[] = { 0xd7, 0x2c, 0x78, 0x75, 0x8c, 0xdc, 0xca, 0xbf, 0x55, 0xee, 0x4a, 0x77, 0x8d, 0x16, 0xef, 0x67 };
 uint32_t devAddr = (uint32_t)0x007e6ae1;
@@ -27,9 +30,9 @@ uint32_t devAddr = (uint32_t)0x007e6ae1;
 uint16_t userChannelsMask[6] = { 0xFF00, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
 
 /* LoRaWAN Configuration */
-LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;  // select US915 from tool tab.
+LoRaMacRegion_t loraWanRegion = LORAMAC_REGION_US915;  // select US915 from tool tab if ACTIVE_REGION in Arduino IDE or type LORAMAC_REGION_US915 in here.
 DeviceClass_t loraWanClass = CLASS_A;
-uint32_t appTxDutyCycle = 180000;  // this is the time interval between data being sent
+uint32_t appTxDutyCycle = 900000;  // this is the time interval between data being sent. Currently set for 15 minutes.
 bool overTheAirActivation = true;
 bool loraWanAdr = true;
 bool isTxConfirmed = true;
@@ -45,12 +48,12 @@ float humid {0.0};
 #define LW_PIN 7  // access gpio 7 for leaf wetness analog input.
 int leafWetness {0};
 
-/* Rain Sensor */
-#define RAIN_PIN 2          // interrupt pin
-#define CALC_INTERVAL 1000  // increment of measurements
-#define DEBOUNCE_TIME 15    // time * 1000 in microseconds required to get through bounce noise
-volatile unsigned int rainTrigger = 0;
-volatile unsigned long last_micros_rg;
+/* Rain Sensor NOT USED IN V1.2 */
+// #define RAIN_PIN 2          // interrupt pin
+// #define CALC_INTERVAL 1000  // increment of measurements
+// #define DEBOUNCE_TIME 15    // time * 1000 in microseconds required to get through bounce noise
+// volatile unsigned int rainTrigger = 0;
+// volatile unsigned long last_micros_rg;
 
 /* Prepares LoRaWAN payload */
 // Use the function to format the data being sent
@@ -95,8 +98,7 @@ void setup()
     // Get the sensor readings from the sht31
     tempSum += sht31.readTemperature();
     humidSum += sht31.readHumidity();
-    // Get the leaf wetness
-    lwSum += analogRead(LW_PIN);
+    lwSum += analogRead(LW_PIN); // Get the leaf wetness
   }
 
   // Average the readings
@@ -105,7 +107,7 @@ void setup()
   humid = humidSum / numReadings;
   //rainTrigger_cal = rainTrigger * 0.01;
 
-  Serial.printf("Temp: %.1f C, Humidity: %.1f %%, Leaf Wetness: %d, Rain: %.1f inch\n", temp, humid, leafWetness ); // add rainTrigger_cal once debugged
+  Serial.printf("Temp: %.1f C, Humidity: %.1f %%, Leaf Wetness: %d\n", temp, humid, leafWetness );
 }
 
 void loop() 
@@ -138,14 +140,15 @@ void loop()
       deviceState = DEVICE_STATE_INIT;
       break;
   }
-  rainTrigger = 0;
+  //rainTrigger = 0;
 }
 
-void countingRain() 
-{
-  if((long)(micros() - last_micros_rg) >= DEBOUNCE_TIME * 1000) 
-  { 
-   rainTrigger += 1;
-   last_micros_rg = micros();
-  }  
-}
+/*********** NOT USED IN V1.2 ***********/ 
+// void countingRain() 
+// {
+//   if((long)(micros() - last_micros_rg) >= DEBOUNCE_TIME * 1000) 
+//   { 
+//    rainTrigger += 1;
+//    last_micros_rg = micros();
+//   }  
+// }
