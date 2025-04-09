@@ -79,7 +79,7 @@ void downLinkDataHandle(McpsIndication_t *mcpsIndication)
     // Check if downlink data is received
     if (mcpsIndication->BufferSize > 0) {
         if (mcpsIndication->Buffer[0] == 0x01) {  
-            Serial.println("Turning ON pump/LED for 20 seconds");
+            Serial.println("Turning ON pump/LED for 15 seconds");
             digitalWrite(LED_BUILTIN, HIGH);  // Turn on LED
             digitalWrite(PUMP_PIN, HIGH);     // Turn on pump
 
@@ -99,12 +99,12 @@ void downLinkDataHandle(McpsIndication_t *mcpsIndication)
 
 void checkPumpTimer()
 {
-  if (pumpRunning && (millis() - pumpStartTime >= 20000))  // 20 seconds elapsed?
+  if (pumpRunning && (millis() - pumpStartTime >= 15000))  // 15 seconds elapsed?
   {
     digitalWrite(LED_BUILTIN, LOW);  // Turn LED OFF
     digitalWrite(PUMP_PIN, LOW);     // Turn off pump
     pumpRunning = false;   // Reset state
-    Serial.println("Pump OFF (Auto shutdown after 20 s.)");
+    Serial.println("Pump OFF (Auto shutdown after 15 s.)");
   }
 }
 
