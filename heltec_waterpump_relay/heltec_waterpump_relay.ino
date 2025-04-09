@@ -1,7 +1,7 @@
 #include "LoRaWan_APP.h"
 #define PUMP_PIN 7
   
-/* OTAA para*/
+/* OTAA para*/ // this is for heltec-oled-7
 uint8_t devEui[] = { 0x70, 0xB3, 0xD5, 0x7E, 0xD8, 0x00, 0x42, 0x44 };
 uint8_t appEui[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 uint8_t appKey[] = { 0x3D, 0xD2, 0x71, 0xD2, 0xC8, 0xC5, 0xE4, 0x8E, 0x13, 0x12, 0x35, 0xB1, 0xDF, 0x41, 0xD6, 0xBE };
@@ -79,7 +79,7 @@ void downLinkDataHandle(McpsIndication_t *mcpsIndication)
     // Check if downlink data is received
     if (mcpsIndication->BufferSize > 0) {
         if (mcpsIndication->Buffer[0] == 0x01) {  
-            Serial.println("Turning ON pump/LED for 60 seconds");
+            Serial.println("Turning ON pump/LED for 10 seconds");
             digitalWrite(LED_BUILTIN, HIGH);  // Turn on LED
             digitalWrite(PUMP_PIN, HIGH);     // Turn on pump
 
@@ -99,12 +99,12 @@ void downLinkDataHandle(McpsIndication_t *mcpsIndication)
 
 void checkPumpTimer()
 {
-  if (pumpRunning && (millis() - pumpStartTime >= 60000))  // 1 minute elapsed?
+  if (pumpRunning && (millis() - pumpStartTime >= 10000))  // 1 minute elapsed?
   {
     digitalWrite(LED_BUILTIN, LOW);  // Turn LED OFF
     digitalWrite(PUMP_PIN, LOW);     // Turn off pump
     pumpRunning = false;   // Reset state
-    Serial.println("Pump OFF (Auto shutdown after 1 min)");
+    Serial.println("Pump OFF (Auto shutdown after 10 s.)");
   }
 }
 
